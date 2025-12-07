@@ -36,6 +36,19 @@ genotype_data_long <- do.call(rbind, lapply(1:nrow(df1), function(i) data.frame(
 genotype_data_long$genotype2 = paste0('X', genotype_data_long$genotype2)
 genotype_data_long = genotype_data_long %>% dplyr::select(-Prob )
 str(genotype_data_long)
+mlg_analysis <- mlg(data_genind_adult)
+print(paste("MLG Analysis:", mlg_analysis, "- clearly incorrect since there are def reps"))
+data_genclone_adult <- as.genclone(data_genind_adult)
+data_genclone_adult@mlg <- mlg.filter(data_genclone_adult, dist=bitwise.dist, threshold=0.05)
+mlg(data_genclone_adult)
+mlg_vec <- data_genclone_adult@mlg
+mlg_table <- data.frame(Individual=indNames(data_genclone_adult),MLG=mlg_vec)
+clone_groups <- split(mlg_table$Individual,mlg_table$MLG)
+clone_groups[sapply(clone_groups,length)>0]
+genotype_data_long <- stack(clone_groups[sapply(clone_groups, length) > 0])
+colnames(genotype_data_long) <- c("id", "group")
+group_labels <- setNames(paste0("X", seq_along(unique(genotype_data_long$group))), unique(genotype_data_long$group))
+genotype_data_long$genotype2 <- group_labels[as.character(genotype_data_long$group)]
 real_geno_df <- stack(clone_groups)
 real_geno_df <- real_geno_df %>% mutate(across(c(values ), ~ gsub("05", "0.7", .)))
 real_geno_df <- real_geno_df %>% mutate(values = paste0("X", values))

@@ -1,9 +1,7 @@
-## Cervus outputs
-## PRIORITES
+## CERVUS outputs
+## PRIORITES (for review)
 ## Notes
-##INCLUDING ZEROS
-##NOT INCLUDING ZEROS
-##THOUGHT ON ASYNCRONY
+##THOUGHTS ON ASYNCRONY
 # 1. Load Libraries ------------------------------------------------------
 library(tidyverse)
 library(ggplot2)
@@ -30,6 +28,8 @@ library(performance)
 library(DHARMa)
 library(MuMIn)
 library(effects)
+library(countreg)
+library(GGally)
 source("https://raw.githubusercontent.com/gerard-ricardo/data/master/theme_sleek2")
 source("https://raw.githubusercontent.com/gerard-ricardo/data/master/theme_sleek1")
 source("https://raw.githubusercontent.com/gerard-ricardo/data/master/theme_sleek3")
@@ -92,6 +92,8 @@ join_df2 <- left_join(join_df2, real_geno_df.x, by = "moth_id")
 join_df2 <- left_join(join_df2, real_geno_df.y, by = "fath_id")
 selfs1 = join_df2[which(join_df2$real_geno.x == join_df2$real_geno.y),]
 nrow(selfs1)
+nrow(join_df2)
+8/102
 adult_colonies1 = adult_colonies_sort
 adult_colonies1 <- adult_colonies1 %>% mutate(across(c(Individual1, Individual2), ~ gsub("05", "0.7", .)))
 adult_colonies1 = adult_colonies1 %>% rename(genotype.x = Individual1, genotype.y = Individual2) %>% 
@@ -122,6 +124,7 @@ check_cert <- function(position, group_list2) {
 }
 join_df2$cert_status <- mapply(check_cert, join_df2$genotype.y, MoreArgs = list(group_list2 = group_list2))
 head(join_df2)
+nrow(join_df2)
 join_df2 <- join_df2 %>% dplyr::filter(cert_status == "cert")
 nrow(join_df2)
 print(paste0('non-ambiguos larvae: ', nrow(join_df2)))
@@ -149,7 +152,7 @@ range(join_df2$minutes[which(join_df2$minutes > 44)])
 join_df2$syncr <- ifelse(join_df2$minutes < 44, "async", "sync")
 bin_width <- 20
 join_df2 <- join_df2 %>% mutate(angle = (bearing(cbind(lon.x, lat.x), cbind(lon.y, lat.y)) + 360) %% 360)
-ds_angle = 326
+ds_angle = 323
 join_df2 <- join_df2 %>% mutate(ang_rel_ds = (bearing(cbind(lon.x, lat.x), cbind(lon.y, lat.y)) - ds_angle) %% 360, 
                                 ang_rel_ds = ifelse(ang_rel_ds > 180, 360 - ang_rel_ds, ang_rel_ds))
 join_df2 <- join_df2 %>% mutate(angle_binned = cut(angle, breaks = seq(0, 360, by = bin_width), include.lowest = TRUE, labels = seq(bin_width/2, 360 - bin_width/2, by = bin_width)))
@@ -159,6 +162,8 @@ angle_counts_binned$angle_binned <- as.numeric(as.character(angle_counts_binned$
 (polar_plot = polar.plot(lengths = angle_counts_binned$count, polar.pos = angle_counts_binned$angle_binned, 
                          radial.lim = c(0, max(angle_counts_binned$count)), start = 90, lwd = 5, line.col = 4, 
                          clockwise = T, cex.axis = 2, cex = 2,cex.lab = 2))
+fig3c_inset_source = angle_counts_binned
+save(fig3c_inset_source, file = file.path("./Rdata/fig3c_inset_source.RData"))
 create_polar_plot <- function() {
   par(mar = c(0, 0, 0, 0))
   polar.plot(
@@ -172,7 +177,7 @@ create_polar_plot <- function() {
     clockwise = TRUE
   )
 }
-center_angle <- 326
+center_angle <- 323
 angle_range <- 45
 lower_bound <- (center_angle - angle_range) %% 360
 upper_bound <- (center_angle + angle_range) %% 360
@@ -184,11 +189,11 @@ if (lower_bound < upper_bound) {
                                                  angle_counts_binned$angle_binned <= upper_bound]
 }
 percentage <- sum(filtered_counts) / sum(angle_counts_binned$count) * 100
-cat("Percentage of counts within ±45° of 326°:", round(percentage, 2), "%\n")
+cat("Percentage of counts within ±45° of 323°:", round(percentage, 2), "%\n")
 join_df2$angle_rad <- join_df2$angle * pi / 180
 angles_circular <- circular(join_df2$angle_rad, units = "radians")
 rayleigh.test(angles_circular)
-print(paste0('After angle and sync calculations: ', nrow(join_df2)))
+print(paste0('Larvae (no.) after angle and sync calculations: ', nrow(join_df2)))
 # Analyses ----------------------------------------------------------------
 ## Pairwise distances
 (quan <- quantile(join_df2$dist_m, probs=c(0, .25, .5, .83, 1)))
@@ -209,6 +214,8 @@ lower_66_w <- quan_66_w[1]; upper_66_w <- quan_66_w[2]
 lower_95_w <- quan_95_w[1]; upper_95_w <- quan_95_w[2]
 cols <- c("Unweighted" = "#A2CFE3",  # pastel blue
           "Weighted" = "#E3A2A8")    # pastel red
+fig3c_source = data.frame(dist = join_df2$dist_m, weights = as.vector(join_df2$normalised_weight))
+save(fig3c_source, file = file.path("./Rdata/fig3c_source.RData"))
 pairwise_dist_plot <- ggplot(join_df2, aes(x = dist_m)) +
   geom_density(aes(fill = "Unweighted", color = "Unweighted"), alpha = 0.3, bw = 3) +
   geom_density(aes(weight = normalised_weight, fill = "Weighted", color = "Weighted"), alpha = 0.3,  bw = 3) +
@@ -298,8 +305,8 @@ join_df3 = left_join(join_df3, meta2_selected_y, by = c("genotype.y"), relations
 join_df3 <- join_df3[complete.cases(join_df3), ]
 join_df3 = left_join(join_df3, genetic_dist_ave, by = c("genotype.x", "genotype.y"))
 head(join_df3)
-selfs1 = join_df3 %>% filter(count > 0 & gen_dist <200)
-nrow(selfs1) / nrow(join_df2)  * 100
+selfs2 = join_df3 %>% filter(count > 0 & gen_dist <200)
+nrow(selfs2) / nrow(join_df2)  * 100
 points_x_proj <- st_as_sf(join_df3, coords = c("lon.x", "lat.x"), crs = 4326) %>% st_transform(crs = 32653)
 points_y_proj <- st_as_sf(join_df3, coords = c("lon.y", "lat.y"), crs = 4326) %>% st_transform(crs = 32653)
 join_df3$dist_m <- as.numeric(st_distance(points_x_proj, points_y_proj, by_element = TRUE))
@@ -334,15 +341,11 @@ plot(df_pos_only$count  ~ df_pos_only$ang_rel_ds)
 plot(df_pos_only$count  ~ df_pos_only$cos_ang)
 summary(glm(df_pos_only$count  ~ df_pos_only$cos_ang))
 range(df_pos_only$ang_rel_ds)
-library(countreg)
 trunc_pois <- zerotrunc(count ~ scale(dist_m) + align_cat, data = df_pos_only,  dist = "poisson") 
 summary(trunc_pois)
 trunc_nb <- zerotrunc(count ~ scale(dist_m) + cos_ang , data = df_pos_only, dist = "negbin")
 summary(trunc_nb) 
 AIC(trunc_pois, trunc_nb)
-trunc_pois_wei <- zerotrunc(count ~ scale(dist_m) + scale(ang_rel_ds), data = df_pos_only,
-                        dist = "poisson", weights = suc)
-summary(trunc_pois_wei)
 trunc_nb_wei  <- zerotrunc(count ~ scale(dist_m) + scale(ang_rel_ds), data = df_pos_only,
                       dist = "negbin", weights = suc)
 summary(trunc_nb_wei)
@@ -352,7 +355,7 @@ summary(trunc_pois_offset)
 trunc_nb_offset <- zerotrunc(count ~ scale(dist_m) + cos_ang + offset(log(suc)), 
                              data = df_pos_only, dist = "negbin")
 summary(trunc_nb_offset)
-AIC(trunc_pois_wei, trunc_nb_wei,trunc_pois_offset, trunc_nb_offset )
+AIC(trunc_nb_wei,trunc_pois_offset, trunc_nb_offset )
 ## try on colonies sire from central patch
 df_pos_only_centre <- df_pos_only[grep('c',df_pos_only$genotype.y),]
 trunc_pois <- zerotrunc(count ~ scale(dist_m) + cos_ang, data = df_pos_only_centre,  dist = "poisson") 
@@ -387,7 +390,6 @@ plot(final_count ~ cos_ang, data = join_df5)
 # zero-inflated models ----------------------------------------------------
 str(join_df5)
 join_df5 = join_df5 %>% filter(gen_dist > 200)
-library(GGally)
 join_df5 %>%  dplyr::select(dist_m, cos_ang, total_mean_dia.y , gen_dist) %>% ggpairs()
 cor(dplyr::select(join_df5, dist_m, cos_ang, total_mean_dia.y, gen_dist), use = "complete.obs")
 join_df5$dist_m_c <- as.vector(scale(join_df5$dist_m, center = TRUE, scale = FALSE))
@@ -413,7 +415,7 @@ global_mod_nb_z1 <- glmmTMB(final_count ~ dist_m_c  * cos_ang_c + total_mean_dia
                         family = nbinom2,
                         data = join_df5,
                         na.action = na.fail)
-global_mod_nb_nozi <- glmmTMB(final_count ~ dist_m_c  * cos_ang_c + total_mean_dia.y + poly(gen_dist, 2) + offset(log(suc + 1e-6)) ,  
+global_mod_nb_nozi <- glmmTMB(final_count ~ dist_m_c  * cos_ang_c + total_mean_dia.y + poly(gen_dist, 2) + offset(log(suc + 1e-6)),  
                         family = nbinom2,
                         data = join_df5,
                         na.action = na.fail)
@@ -431,110 +433,60 @@ global_mod_poi_nozi <- glmmTMB(final_count ~ dist_m_c * cos_ang_c + total_mean_d
                                       family = poisson,
                                       data = join_df5,
                                       na.action = na.fail)
-AIC(global_mod_nb_zsuc, global_mod_nb_z1, global_mod_nb_nozi, global_mod_poi_zsuc, global_mod_poi_z1, global_mod_poi_nozi)
+aic_vals = AIC(global_mod_nb_zsuc, global_mod_nb_z1, global_mod_nb_nozi, global_mod_poi_zsuc, global_mod_poi_z1, global_mod_poi_nozi)
+aic_vals[order(aic_vals$AIC), ]
 summary(global_mod_nb_nozi)
-performance::check_collinearity(global_mod_nb_nozi)
-sum(resid(global_mod_nb_nozi, type = "pearson")^2) / (nrow(join_df5) - length(coef(global_mod_nb_nozi)))
-plot(fitted(global_mod_nb_nozi), resid(global_mod_nb_nozi))
+best_int = global_mod_nb_nozi
+performance::check_collinearity(best_int)
+sum(resid(best_int, type = "pearson")^2) / (nrow(join_df5) - length(coef(best_int)))
+plot(fitted(best_int), resid(best_int))
 abline(h = 0)
-check_zeroinflation(global_mod_nb_nozi)
-check_singularity(global_mod_nb_nozi)
-sim_res <- simulateResiduals(global_mod_nb_nozi)
+lines(lowess(fitted(best_int), resid(best_int, type = "pearson")), col = "red")
+check_zeroinflation(best_int)
+check_singularity(best_int)
+sim_res <- simulateResiduals(best_int)
 testOutliers(sim_res, type = "bootstrap")
 plot(sim_res)
-check_model(global_mod_nb_nozi)
-dredged_models <- dredge(global_mod_nb_nozi, rank = "AIC", fixed = ~cond(offset(log(suc + 1e-6))))
-(best_models <- subset(dredged_models, delta < 2))
-best_mod <- glmmTMB(final_count ~ dist_m_c  + cos_ang_c + poly(gen_dist, 2) + offset(log(suc + 1e-6)) ,  
-                                ziformula = ~ 0,
-                                family = nbinom2,
-                                data = join_df5,
-                                na.action = na.fail)
-summary(best_mod)
-sum(resid(best_mod, type = "pearson")^2) / (nrow(join_df5) - length(coef(best_mod)))
-plot(fitted(best_mod), resid(best_mod))
-abline(h = 0)
-check_zeroinflation(best_mod)
-check_singularity(best_mod)
-sim_res <- simulateResiduals(best_mod)
-testOutliers(sim_res, type = "bootstrap")
-plot(sim_res)
-check_model(best_mod)
-best_add <- glmmTMB(final_count ~ dist_m_c  + cos_ang_c   + poly(gen_dist,2) + offset(log(suc + 1e-6)) ,  
+check_model(best_int)
+best_add <- glmmTMB(final_count ~ dist_m_c  + cos_ang_c   + total_mean_dia.y + poly(gen_dist,2) + offset(log(suc + 1e-6)) ,  
                     ziformula = ~ 0,
-                    family = nbinom2,
+                    family = nbinom1,
                     data = join_df5,
                     na.action = na.fail)
-sum(resid(best_add, type = "pearson")^2) / (nrow(data1) - length(coef(best_add)))
+performance::check_collinearity(best_add)
+sum(resid(best_add, type = "pearson")^2) / (nrow(join_df5) - length(coef(best_add)))
 plot(fitted(best_add), resid(best_add))
 abline(h = 0)
+lines(lowess(fitted(best_add), resid(best_add, type = "pearson")), col = "red")
 check_zeroinflation(best_add)
 check_singularity(best_add)
-check_model(best_add)
 sim_res <- simulateResiduals(best_add)
 testOutliers(sim_res, type = "bootstrap")
 plot(sim_res)
 check_model(best_add)
+AIC(global_mod_nb_nozi, best_add)
+anova(best_add, global_mod_nb_nozi)
+dredged_models <- dredge(global_mod_nb_nozi, rank = "AIC", fixed = ~cond(offset(log(suc + 1e-6))))
+(best_models <- subset(dredged_models, delta < 2))
 extract_models <- get.models(dredged_models, subset = delta < 2)
 len1 = length(extract_models)
 best = extract_models[1:len1]
 model_avg <- model.avg(best, revised.var = TRUE)
 summary(model_avg)
-## plot effects
-best1 = best_mod
-pred_data <- with(join_df5, {
-  dist_seq <- seq(min(dist_m_c), max(dist_m_c), length.out = 100)
-  ang_seq <- seq(min(cos_ang_c), max(cos_ang_c), length.out = 100)
-  gen_seq <- seq(min(gen_dist), max(gen_dist), length.out = 100)
-  
-  dist_grid <- expand.grid(dist_m_c = dist_seq,cos_ang_c = mean(cos_ang_c),gen_dist = mean(gen_dist),suc = mean(suc))
-  ang_grid <- expand.grid(dist_m_c = mean(dist_m_c),cos_ang_c = ang_seq,gen_dist = mean(gen_dist),suc = mean(suc))
-  gen_grid <- expand.grid(dist_m_c = mean(dist_m_c),cos_ang_c = mean(cos_ang_c),gen_dist = gen_seq,suc = mean(suc))
-  list(dist = dist_grid, ang = ang_grid, gen = gen_grid)
-})
-get_predictions <- function(newdata, model) {
-  pred <- predict(model, newdata = newdata, type = "link", se.fit = TRUE)
-  fit <- exp(pred$fit)
-  upr <- exp(pred$fit + 1.96 * pred$se.fit)
-  lwr <- exp(pred$fit - 1.96 * pred$se.fit)
-  data.frame(fit = fit, lwr = lwr, upr = upr)
-}
-dist_pred <- cbind(pred_data$dist, get_predictions(pred_data$dist, best1))
-ang_pred <- cbind(pred_data$ang, get_predictions(pred_data$ang, best1))
-gen_pred <- cbind(pred_data$gen, get_predictions(pred_data$gen, best1))
-p1 <- ggplot(dist_pred, aes(x = dist_m_c)) +
-  geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.2) +
-  geom_line(aes(y = fit)) +
-  geom_point(data = join_df5, aes(y = final_count), alpha = 0.2) +
-  theme_sleek2() +
-  labs(x = "Distance (centered)", 
-       y = "Predicted count", 
-       title = "A") +
-  theme(plot.title = element_text(face = "bold", size = 16, hjust = -0.1))
-p2 <- ggplot(ang_pred, aes(x = cos_ang_c)) +
-  geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.2) +
-  geom_line(aes(y = fit)) +
-  geom_point(data = join_df5, aes(y = final_count), alpha = 0.2) +
-  theme_sleek2() +
-  labs(x = "Cosine angle (centered)", 
-       y = "Predicted count", 
-       title = "B") +
-  theme(plot.title = element_text(face = "bold", size = 16, hjust = -0.1))
-p3 <- ggplot(gen_pred, aes(x = gen_dist)) +
-  geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.2) +
-  geom_line(aes(y = fit)) +
-  geom_point(data = join_df5, aes(y = final_count), alpha = 0.2) +
-  theme_sleek2() +
-  labs(x = "Genetic distance", 
-       y = "Predicted count", 
-       title = "C") +
-  theme(plot.title = element_text(face = "bold", size = 16, hjust = -0.1))
-grid.arrange(
-  p1, p2, p3, 
-  layout_matrix = rbind(c(1,2), c(3,NA)),
-  widths = c(1,1),
-  heights = c(1,1)
+# Extract dist and angle for simulation-------------------------------------------------------------------------
+## prepare coefs for export to simulation data
+(beta0_c <- summary(model_avg)$coefficients[1,1])
+(beta_dist <- summary(model_avg)$coefficients[1,3])
+(beta_angle <- summary(model_avg)$coefficients[1,2])
+glm_export <- list(
+  beta0_c = beta0_c,
+  beta_dist = beta_dist,
+  beta_angle = beta_angle,
+  mean_dist = mean(join_df5$dist_m, na.rm = TRUE),
+  mean_cos_ang = mean(join_df5$cos_ang, na.rm = TRUE)
 )
+# -------------------------------------------------------------------------
+## plot effects
 ##Model averaged plot
 ## plot effects for model averaged model
 pred_data_avg <- with(join_df5, {
@@ -607,6 +559,9 @@ lines_sf <- st_sfc(lapply(1:nrow(join_df2), function(i) {
   st_linestring(rbind(c(join_df2$lon.x[i], join_df2$lat.x[i]),
                       c(join_df2$lon.y[i], join_df2$lat.y[i])))}), crs = 4326)
 lines_sf <- st_sf(geometry = lines_sf, dist_m = join_df2$dist_m)
+fig3a_source = join_df2 %>% dplyr::select(genotype.x , lat.x, lon.x, genotype.y,lat.y, lon.y) %>%
+  rename(position_x = genotype.x, position_y = genotype.y)
+save(fig3a_source, file = file.path("./Rdata/fig3a_source.RData"))
 distance_plot = ggplot() +
   geom_sf(data = points_x, color = 'blue', size = 2) +
   geom_sf(data = points_y, color = 'red', size = 2) +
@@ -676,6 +631,8 @@ map <- get_googlemap(center = c(lon = join_df2$lon.x[8], lat = join_df2$lat.x[8]
 ggmap(map) +
   geom_point(data = meta2, aes(x = lon, y = lat), color = "white", size = 3) +
   labs(x = "Longitude", y = "Latitude")
+fig1a_source = meta2 %>% dplyr::select(lat, lon, genotype ) %>% rename(position = genotype) %>% tidyr::drop_na() 
+save(fig1a_source, file = file.path("./Rdata/palau2023_adult_positions.RData"))
 map <- get_googlemap(center = c(lon = join_df2$lon.x[8], lat = join_df2$lat.x[8]), zoom = 20, color = "bw", maptype = "satellite")
 p2 = ggmap(map) +
   geom_segment(data = join_df2, aes(x = lon.x, y = lat.x, xend = lon.y, yend = lat.y), color = "grey", size = 1) +

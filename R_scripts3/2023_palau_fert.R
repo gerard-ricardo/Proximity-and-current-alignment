@@ -35,7 +35,7 @@ radial_indiv <- data1[which(data1$spoke != 'c'),]
 radial_indiv <- radial_indiv %>% mutate(deg_from_north = case_when(spoke == 2 ~ 77, spoke == 3 ~ 101, spoke == 4 ~ 124, 
                                                                    spoke == 5 ~ 148, spoke == 6 ~ 173, spoke == 7 ~ 201, TRUE ~ NA_real_))
 diff(unique(radial_indiv$deg_from_north))
-radial_indiv$deg = radial_indiv$deg_from_north - 146.5
+radial_indiv$deg = radial_indiv$deg_from_north - 143
 range(radial_indiv$deg )
 radial_indiv$deg_rad <- radial_indiv$deg * pi / 180
 radial_indiv$sin_deg <- sin(radial_indiv$deg_rad)
@@ -68,6 +68,9 @@ median_prop <- median(resampled_data_all$prop1)
 iqr_prop <- IQR(resampled_data_all$prop1)
 print(paste0('Median fertilisation: ', 100*round(median_prop, 4), '%, IQR: ', 100*round(iqr_prop, 4), '%'))
 range(resampled_data_all$prop1)
+range(resampled_data_all$tot)
+quantile(resampled_data_all$tot, c(0.05, 0.95))
+nrow(resampled_data_all)
 set.seed(123)
 target_n_a <- 50
 resampled_data_rad <- radial_indiv %>% group_by(id) %>% mutate(prob_suc = suc / tot) %>%  filter(tot >= target_n_a) %>%
@@ -86,11 +89,14 @@ text(radial_indiv$time_from_base, radial_indiv$prop, labels = radial_indiv$id, p
 # GAMM --------------------------------------------------------------------
 md1 <- gamm(cbind(suc, tot - suc) ~ s(deg, k = 3) + dist,   random = list(obs = ~1), family = binomial,  method = "REML", verbosePQL = F, 
             data = radial_indiv)
+fig2_source = radial_indiv %>% dplyr::select(suc, tot, deg, dist )  
+save(fig2_source, file = file.path("./Rdata/fig2_source.RData"))
 md1$gam
 coef(md1)
 summary(md1)
 summary(md1$gam)
 AIC(md1)
+gam.check(md1$gam)
 coef_dist <- summary(md1$gam)$p.table["dist", "Estimate"]
 pval_dist <- summary(md1$gam)$p.table["dist", "Pr(>|t|)"]
 odds_ratio <- exp(coef_dist)
@@ -105,14 +111,8 @@ prob <- exp(eta) / (1 + exp(eta))
 data.frame(Distance = dist_vals, Probability = prob)
                    
 ############################
-radial_indiv$clonemate_in_sperm <- ifelse(radial_indiv$egg_clone_in_sperm, 1, 0)
-radial_indiv$effective_sperm_sources <- ifelse(radial_indiv$id %in% c("5_30", "3_30", "4_30"), 14, 15)
-md2 <- gamm(cbind(suc, tot - suc) ~ s(deg, k = 3) + dist + effective_sperm_sources, 
-              random = list(obs = ~1), family = binomial, method = "REML", data = radial_indiv)
-summary(md2$gam)
-AIC(md2)
 ################
-k <- 5
+k <- 3
 set.seed(123)
 radial_indiv$fold <- sample(rep(1:k, length.out = nrow(radial_indiv)))
 cv_results <- lapply(1:k, function(i) {
@@ -156,8 +156,39 @@ p0 <- ggplot(new_data, aes(x = dist, y = deg)) +
     axis.title = element_text(size = 13),
     axis.text = element_text(size = 12)
   )
-p0 <- p0 +
+ p0
+nrow(radial_indiv)
+p1 <- ggplot(new_data, aes(x = dist, y = deg)) +
+  geom_raster(aes(fill = predicted)) +
+  scale_fill_gradient(low = "#3B9AB2", high = "#F21A00", breaks = seq(0.1, 0.9, by = 0.1)) +
+  labs(x = "Distance from center patch (m)", y = "Downstream of center patch (°)", fill = "Predicted fert.\nsuccess") +
+  geom_contour(aes(z = predicted), breaks = seq(0.1, 0.9, by = 0.1), color = "white") +
+  theme_minimal() +
+  scale_y_reverse() + 
+  geom_hline(yintercept = rad_lines, color = "#E1AF00", lty = 2) +
+  annotate("text", x = max(new_data$dist), y = rad_lines[1]-5, label = "Radial line 2", 
+           color = "#E1AF00", size = 5, hjust = 1.2) +  # Adjust position
+  annotate("text", x = max(new_data$dist), y = rad_lines[length(rad_lines)]-5, label = "Radial line 7", 
+           color = "#E1AF00", size = 5, hjust = 1.2)+
+  theme(
+    legend.key.height = unit(1, "cm"),
+    axis.title = element_text(size = 13),
+    axis.text = element_text(size = 12)
+  )
+p1 <- p1 +
   geom_point(data = radial_indiv, aes(x = dist, y = deg, color = prop), size = 2) +
   geom_text(data = radial_indiv, aes(x = dist, y = deg, label = round(prop, 2)), 
-            color = "black", size = 3, vjust = -1)
-p0
+            color = "black", size = 3, vjust = -1) + labs(color = "Observed fert.\nsuccess")
+p1
+p2 = ggplot(data = data.frame(Fitted = fitted(md1$gam), Residuals = residuals(md1$gam)), 
+       aes(x = Fitted, y = Residuals)) +
+  geom_point(alpha = 0.6, colour = "#3B9AB2") + # points
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "red") +
+  theme_sleek2() + 
+  labs(x = "Fitted values", y = "Residuals", title = "Fitted vs Residuals for GAMM") +
+  theme(plot.title = element_text(hjust = 0.5))
+p2
+library(patchwork)
+p1 / p2 + plot_layout(heights = c(2, 1)) + 
+  plot_annotation(tag_levels = "A") &
+  theme(plot.tag = element_text(size = 14, face = "bold"))

@@ -29,8 +29,7 @@ plot(Kest(rslt2, correction = c("best")))
 fitted_models <- list(
   Poisson = ppm(rslt2, ~1),
   Thomas = kppm(rslt2 ~1, clusters = "Thomas", method = "clik2"),
-  Matern = kppm(rslt2 ~1, clusters = "MatClust", method = "clik2"),
-  HardCore = kppm(rslt2 ~1, clusters = "Cauchy", method = "clik2")
+  Matern = kppm(rslt2 ~1, clusters = "MatClust", method = "clik2")
 )
 (model_comparison <- sapply(fitted_models, AIC))
 fitted_thomas <- kppm(rslt2 ~1, clusters = "Thomas", method = "clik2")
@@ -121,12 +120,6 @@ total_points_in_buffer <- sum(points_in_buffer)
 grid_area <- length(seq(0, 10, by = grid_size))^2
 (percent_cover <- (total_points_in_buffer / grid_area) * 100)
 # compare 2022 with 2023 crest slope --------------------------------------
-load("C:/Users/gerar/OneDrive/1_Work/4_Writing/1_Allee_effects/allee_experiments/Rdata/2022_adult_nat_intercol.RData")
-df3 <- data.frame(dist = dist, habitat = "slope")
-df4 <- data.frame(dist = ad, habitat = "crest")
-df5 <- rbind(df3, df4)
-intercol_dist_natural = df5
-save(intercol_dist_natural, file = file.path("./Rdata", "intercol_dist_natural.RData"))
 load("./Rdata/intercol_dist_natural.RData")
 p1 <- ggplot(df5, aes(x = dist)) +
   geom_density(aes(group = habitat, color = habitat, fill = habitat), alpha = 0.3)

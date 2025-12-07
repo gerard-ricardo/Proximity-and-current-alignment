@@ -1,4 +1,18 @@
+
+#How to populate this project
+#1) Create folder called 'R_scripts'. Copy all script from Palau project to this folder manually.
+#2) Run below code
+#3) Push to Github
+
+
+
+
+
+
 library(fs)
+
+input_folder <- "C:/Users/gerar/Documents/1_R_projects_local/Proximity-and-current-alignment/R_scripts"
+output_folder <- "C:/Users/gerar/Documents/1_R_projects_local/Proximity-and-current-alignment/R_scripts3"
 
 remove_single_hash_comment <- function(line) {
   # Find positions of single and double quotes
@@ -62,8 +76,7 @@ clean_project_code <- function(input_dir, output_dir) {
   }
 }
 
-input_folder <- "C:/Users/gerar/Documents/1_R_projects_local/Proximity-and-current-alignment/R_scripts"
-output_folder <- "C:/Users/gerar/Documents/1_R_projects_local/Proximity-and-current-alignment/R_scripts3"
+
 clean_project_code(input_folder, output_folder)
 
 
