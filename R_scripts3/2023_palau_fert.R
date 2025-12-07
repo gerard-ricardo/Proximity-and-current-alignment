@@ -90,12 +90,12 @@ text(radial_indiv$time_from_base, radial_indiv$prop, labels = radial_indiv$id, p
 md1 <- gamm(cbind(suc, tot - suc) ~ s(deg, k = 3) + dist,   random = list(obs = ~1), family = binomial,  method = "REML", verbosePQL = F, 
             data = radial_indiv)
 fig2_source = radial_indiv %>% dplyr::select(suc, tot, deg, dist )  
-save(fig2_source, file = file.path("./Rdata/fig2_source.RData"))
+#save(fig2_source, file = file.path("./Rdata/fig2_source.RData"))
 md1$gam
 coef(md1)
 summary(md1)
 summary(md1$gam)
-AIC(md1)
+#AIC(md1)
 gam.check(md1$gam)
 coef_dist <- summary(md1$gam)$p.table["dist", "Estimate"]
 pval_dist <- summary(md1$gam)$p.table["dist", "Pr(>|t|)"]

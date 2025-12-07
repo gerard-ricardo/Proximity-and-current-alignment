@@ -2,6 +2,7 @@
 #How to populate this project
 #1) Create folder called 'R_scripts'. Copy all script from Palau project to this folder manually.
 #2) Run below code
+#3) Delete 'R_scripts'
 #3) Push to Github
 
 
