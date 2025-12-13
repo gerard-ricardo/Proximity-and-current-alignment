@@ -1,9 +1,6 @@
 ## This script is the main test script for the reef type simulations. It loads the simulate_process function. 
 ## The density of the distance from the 2023 Palau experiment are loaded in to create probabilities around each pair. 
-##Adding on extra until 0.03
-##maybe faulty logic because of this discretisation....need to think about this more
 ##Workflow is to:
-## check correct function run at bottom
 filename = 'slope_26'
 # load libraries ----------------------------------------------------------
 library(spatstat)

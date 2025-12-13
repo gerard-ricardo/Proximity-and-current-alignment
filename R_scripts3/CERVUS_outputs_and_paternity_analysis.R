@@ -561,7 +561,6 @@ lines_sf <- st_sfc(lapply(1:nrow(join_df2), function(i) {
 lines_sf <- st_sf(geometry = lines_sf, dist_m = join_df2$dist_m)
 fig3a_source = join_df2 %>% dplyr::select(genotype.x , lat.x, lon.x, genotype.y,lat.y, lon.y) %>%
   rename(position_x = genotype.x, position_y = genotype.y)
-save(fig3a_source, file = file.path("./Rdata/fig3a_source.RData"))
 distance_plot = ggplot() +
   geom_sf(data = points_x, color = 'blue', size = 2) +
   geom_sf(data = points_y, color = 'red', size = 2) +
@@ -632,7 +631,6 @@ ggmap(map) +
   geom_point(data = meta2, aes(x = lon, y = lat), color = "white", size = 3) +
   labs(x = "Longitude", y = "Latitude")
 fig1a_source = meta2 %>% dplyr::select(lat, lon, genotype ) %>% rename(position = genotype) %>% tidyr::drop_na() 
-save(fig1a_source, file = file.path("./Rdata/palau2023_adult_positions.RData"))
 map <- get_googlemap(center = c(lon = join_df2$lon.x[8], lat = join_df2$lat.x[8]), zoom = 20, color = "bw", maptype = "satellite")
 p2 = ggmap(map) +
   geom_segment(data = join_df2, aes(x = lon.x, y = lat.x, xend = lon.y, yend = lat.y), color = "grey", size = 1) +

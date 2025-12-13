@@ -14,6 +14,7 @@ library(ggraph)
 # attach clone id (genotype to data) --------------------------------------
 data_gl_filtered_adult@other$ind.metrics$id <- as.character(data_gl_filtered_adult@other$ind.metrics$id)
 genotype_data_long$id <- as.character(genotype_data_long$id)
+head(data_gl_filtered_adult@other$ind.metrics)
 str(data_gl_filtered_adult@other$ind.metrics)
 data_gl_filtered_adult@other$ind.metrics <- data_gl_filtered_adult@other$ind.metrics %>% left_join(genotype_data_long,  by = "id")
 data_gl_filtered_adult@other$ind.metrics$genotype2
@@ -21,6 +22,18 @@ tt = data_gl_filtered_adult@other$ind.metrics
 # population filtering and objects ----------------------------------------
 data_gl_filtered_adult@pop <- as.factor(data_gl_filtered_adult@other$ind.metrics$genotype2)
 data_gl_filtered_adult
+map <- get_googlemap(center = c(lon = data_gl_filtered_adult@other$ind.metrics$lon[1], 
+                                lat = data_gl_filtered_adult@other$ind.metrics$lat[1]), 
+                     zoom = 22, color = "bw", maptype = "satellite")
+p2 <- ggmap(map) +
+  geom_point(data = data_gl_filtered_adult@other$ind.metrics, 
+             aes(x = lon, y = lat, color = genotype2), size = 3) +
+  geom_text(data = data_gl_filtered_adult@other$ind.metrics, 
+            aes(x = lon, y = lat, label = genotype2, color = genotype2), 
+            vjust = -0.5, hjust = 0.5, size = 4, show.legend = FALSE) +
+  labs(x = "Longitude", y = "Latitude", color = "Genotype") +
+  theme_minimal()
+p2
 ## temporarily remove missing genotypes
 data_genind <- gl2gi(data_gl_filtered)
 data_genind_adult <- gl2gi(data_gl_filtered_adult)
