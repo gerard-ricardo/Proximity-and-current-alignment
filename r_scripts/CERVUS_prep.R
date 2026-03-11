@@ -1,6 +1,4 @@
 # Cervus Platy mapping extraction (working)------------------------------------------------------
-##
-####NOTE: Seems to be too many canidate reps n offspring file
 data1 <- data_genind_pre@tab
 head(data1)
 data1 = t(data1) %>% data.frame()

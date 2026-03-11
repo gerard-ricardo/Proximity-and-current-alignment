@@ -1,7 +1,7 @@
 ## This script is the main test script for the reef type simulations. It loads the simulate_process function. 
 ## The density of the distance from the 2023 Palau experiment are loaded in to create probabilities around each pair. 
 ##Workflow is to:
-filename = 'slope_26'
+filename = 'crest_29'
 # load libraries ----------------------------------------------------------
 library(spatstat)
 library(dplyr)
@@ -30,7 +30,7 @@ max_distance = 3
 non_participating_list <- vector()
 sims = 201
 length = 16
-type = 'slope'
+type = 'crest'
 den_min = 0.0003
 den_max = 0.3
 # single run --------------------------------------------------------------
@@ -74,6 +74,7 @@ process_data3 <- function(type = type, den_grid_size = 100, sims = 10, length = 
       density_results[[d]] <- data.frame(
         density = density,
         type = type,
+        num_colonies = NA_real_,
         mean_num_pairs = NA_real_,
         lower_95_num_pairs = NA_real_,
         upper_95_num_pairs = NA_real_,
@@ -105,6 +106,7 @@ process_data3 <- function(type = type, den_grid_size = 100, sims = 10, length = 
           pull(num_partners)
       })
       fertilised_counts_vector <- unlist(fertilised_counts_vector)
+      num_colonies_vector <- sapply(result_list, function(res) res$actual_number)
       cv_eff_strength_vector <- sapply(result_list, function(res) {
         if(is.null(res$pairwise_df_all) || nrow(res$pairwise_df_all) == 0) return(NA_real_)
         s <- res$pairwise_df_all$effective_strength
@@ -119,6 +121,7 @@ process_data3 <- function(type = type, den_grid_size = 100, sims = 10, length = 
       density_results[[d]] <- data.frame(
         density = density,
         type = type,
+        num_colonies = num_colonies_vector,
         mean_num_pairs = mean(num_pairs_vector, na.rm = TRUE),
         lower_95_num_pairs = quantile(num_pairs_vector, 0.025, na.rm = TRUE),
         upper_95_num_pairs = quantile(num_pairs_vector, 0.975, na.rm = TRUE),
@@ -142,6 +145,7 @@ process_data3 <- function(type = type, den_grid_size = 100, sims = 10, length = 
         detailed_results_list[[d]] <- data.frame(
           density = rep(density, length(num_pairs_vector)),
           type = rep(type, length(num_pairs_vector)),
+          num_colonies = num_colonies_vector,
           num_pairs = num_pairs_vector,
           num_non_participating = num_non_participating_vector,
           fertilised_counts = fertilised_counts_vector,
@@ -182,9 +186,9 @@ process_data3 <- function(type = type, den_grid_size = 100, sims = 10, length = 
   
   return(density_summary)
 }
+crest = process_data3(type = type, sims = sims, length = length, den_min = den_min, den_max = den_max)
+save(crest, file = file.path("./Rdata", paste0("mixing_", filename, '_', sims, '_', length, ".RData")))
   
-slope = process_data3(type = type, sims = sims, length = length, den_min = den_min, den_max = den_max)
-save(slope, file = file.path("./Rdata", paste0("mixing_", filename, '_', sims, '_', length, ".RData")))
 stopCluster(cl)  
 # sim end -----------------------------------------------------------------
 print(paste0('sims = ', sims))

@@ -12,8 +12,8 @@
 
 library(fs)
 
-input_folder <- "C:/Users/gerar/Documents/1_R_projects_local/Proximity-and-current-alignment/R_scripts"
-output_folder <- "C:/Users/gerar/Documents/1_R_projects_local/Proximity-and-current-alignment/R_scripts3"
+input_folder <- "C:/Users/gerar/Documents/1_R_projects_local/Proximity-and-current-alignment/r_scripts4"
+output_folder <- "C:/Users/gerar/Documents/1_R_projects_local/Proximity-and-current-alignment/r_scripts"
 
 remove_single_hash_comment <- function(line) {
   # Find positions of single and double quotes

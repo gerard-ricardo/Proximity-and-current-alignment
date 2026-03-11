@@ -44,3 +44,6 @@ for(i in seq_along(results)) {
   }
   box()
 }
+res <- results[[which(types == "slope")]]
+ang_df <- res$pairwise_df_all
+mean(ang_df$cos_angle[ang_df$success])
